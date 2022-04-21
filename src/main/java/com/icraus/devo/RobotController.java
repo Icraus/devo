@@ -1,6 +1,13 @@
 package com.icraus.devo;
 
-public class RobotController {
+public class RobotController implements IRobotController {
+    public static final char NORTH = 'N';
+    public static final char SOUTH = 'S';
+    public static final char WEST = 'W';
+    public static final char EAST = 'E';
+    public static final char LEFT = 'L';
+    public static final char RIGHT = 'R';
+    public static final char FORWARD = 'F';
     private int depth;
     private int width;
     private Pose currentPose;
@@ -27,80 +34,78 @@ public class RobotController {
     }
 
 
-    public Pose executeRoute(Pose pose, String route) throws UnSupportedMoveOperation {
+    @Override
+    public Pose executeRoute(Pose pose, String route) throws UnSupportedMoveOperationException {
         setCurrentPose(pose);
         for(char currentMove : route.toCharArray()){
             switch (currentMove){
-                case 'L':
+                case LEFT:
                     turnLeft();
                     break;
-                case 'R':
+                case RIGHT:
                     turnRight();
                     break;
-                case 'F':
+                case FORWARD:
                     moveForward();
                     break;
                 default:
-                    throw new UnSupportedMoveOperation("Error, "+ currentMove+ " is Not supported");
+                    throw new UnSupportedMoveOperationException("Error, "+ currentMove+ " is Not supported");
             }
         }
         return getCurrentPose();
     }
 
-    protected void turnRight() {
-        switch (getCurrentPose().getOrient()){
-            case 'W':
-                getCurrentPose().setOrient('N');
-                break;
-            case 'E':
-                getCurrentPose().setOrient('S');
-                break;
-            case 'N':
-                getCurrentPose().setOrient('E');
-                break;
-            case 'S':
-                getCurrentPose().setOrient('W');
-        }
+
+    @Override
+    public void turnRight() throws UnSupportedMoveOperationException {
+        navigateRobot(NORTH, SOUTH, EAST, WEST);
     }
 
-    protected void turnLeft() {
-        switch (getCurrentPose().getOrient()){
-            case 'W':
-                getCurrentPose().setOrient('S');
-                break;
-            case 'E':
-                getCurrentPose().setOrient('N');
-                break;
-            case 'N':
-                getCurrentPose().setOrient('W');
-                break;
-            case 'S':
-                getCurrentPose().setOrient('E');
-        }
+    @Override
+    public void turnLeft() throws UnSupportedMoveOperationException {
+        navigateRobot(SOUTH, NORTH, WEST, EAST);
     }
-    protected void moveForward() throws UnSupportedMoveOperation {
+
+    @Override
+    public void moveForward() throws UnSupportedMoveOperationException {
         var x = getCurrentPose().getX();
         var y = getCurrentPose().getY();
         switch (getCurrentPose().getOrient()){
-            case 'W':
+            case WEST:
                 getCurrentPose().setX(x - 1);
-                if(getCurrentPose().getX() >= getWidth())
-                    throw new UnSupportedMoveOperation("Error, Ilegal Move");
                 break;
-            case 'E':
+            case EAST:
                 getCurrentPose().setX(x + 1);
-                if(getCurrentPose().getX() >= getWidth())
-                    throw new UnSupportedMoveOperation("Error, Ilegal Move");
                 break;
-            case 'N':
+            case NORTH:
                 getCurrentPose().setY(y - 1);
-                if(getCurrentPose().getY() >= getDepth())
-                    throw new UnSupportedMoveOperation("Error, Ilegal Move");
                 break;
-            case 'S':
-                if(getCurrentPose().getY() >= getDepth())
-                    throw new UnSupportedMoveOperation("Error, Ilegal Move");
+            case SOUTH:
                 getCurrentPose().setY(y + 1);
+        }
+        validateNavigation();
+
+    }
+
+    private void validateNavigation() throws UnSupportedMoveOperationException {
+        if (getCurrentPose().getX() >= width || getCurrentPose().getY() >= depth)
+            throw new UnSupportedMoveOperationException("Error, Ilegal Move");
+    }
+
+    //Cool refactor isn't it :D
+    private void navigateRobot(char north, char south, char east, char west) {
+        switch (getCurrentPose().getOrient()){
+            case WEST:
+                getCurrentPose().setOrient(north);
+                break;
+            case EAST:
+                getCurrentPose().setOrient(south);
+                break;
+            case NORTH:
+                getCurrentPose().setOrient(east);
+                break;
+            case SOUTH:
+                getCurrentPose().setOrient(west);
         }
     }
 
