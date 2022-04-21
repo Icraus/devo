@@ -1,5 +1,13 @@
 package com.icraus.devo;
 
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * I KNOW IT MIGHT BE OVERKILL TO USE THESE DESIGN PATTERN,
+ * I JUST WANTED TO SHOW OFF MY SKILLS.
+ * IF U NEED THE KEEP IT SIMPLE STUPID SOLUTION YOU WILL FIND IT ON THE PREVIOUS COMMIT
+ */
 public class RobotController implements IRobotController {
     public static final char NORTH = 'N';
     public static final char SOUTH = 'S';
@@ -8,9 +16,19 @@ public class RobotController implements IRobotController {
     public static final char LEFT = 'L';
     public static final char RIGHT = 'R';
     public static final char FORWARD = 'F';
+    private final static Map<Character, ICommander> commanderMap = new HashMap<>();
+    static {
+        commanderMap.put(RIGHT, RobotController::turnRight);
+        commanderMap.put(LEFT, RobotController::turnLeft);
+        commanderMap.put(FORWARD, RobotController::moveForward);
+    }
+
+    public static Map<Character, ICommander> getCommanderMap() {
+        return commanderMap;
+    }
+
     private int depth;
     private int width;
-    private Pose currentPose;
 
     public RobotController(int depth, int width) {
         this.depth = depth;
@@ -36,84 +54,62 @@ public class RobotController implements IRobotController {
 
     @Override
     public Pose executeRoute(Pose pose, String route) throws UnSupportedMoveOperationException {
-        setCurrentPose(pose);
         for(char currentMove : route.toCharArray()){
-            switch (currentMove){
-                case LEFT:
-                    turnLeft();
-                    break;
-                case RIGHT:
-                    turnRight();
-                    break;
-                case FORWARD:
-                    moveForward();
-                    break;
-                default:
-                    throw new UnSupportedMoveOperationException("Error, "+ currentMove+ " is Not supported");
+            if(!commanderMap.containsKey(currentMove)){
+                throw new UnSupportedMoveOperationException("Error, "+ currentMove + " is Not supported");
             }
+            commanderMap.get(currentMove).command(pose);
+            validateNavigation(pose);
         }
-        return getCurrentPose();
+        return pose;
     }
 
-
-    @Override
-    public void turnRight() throws UnSupportedMoveOperationException {
-        navigateRobot(NORTH, SOUTH, EAST, WEST);
+    private void validateNavigation(Pose pose) throws UnSupportedMoveOperationException {
+        if (pose.getX() >= width || pose.getY() >= depth)
+            throw new UnSupportedMoveOperationException("Error, Illegal Move");
     }
 
-    @Override
-    public void turnLeft() throws UnSupportedMoveOperationException {
-        navigateRobot(SOUTH, NORTH, WEST, EAST);
+    private static void turnRight(Pose pose) throws UnSupportedMoveOperationException {
+        navigateRobot(pose, NORTH, SOUTH, EAST, WEST);
     }
 
-    @Override
-    public void moveForward() throws UnSupportedMoveOperationException {
-        var x = getCurrentPose().getX();
-        var y = getCurrentPose().getY();
-        switch (getCurrentPose().getOrient()){
+    private static void turnLeft(Pose pose) throws UnSupportedMoveOperationException {
+        navigateRobot(pose, SOUTH, NORTH, WEST, EAST);
+    }
+
+    private static void moveForward(Pose pose) throws UnSupportedMoveOperationException {
+        var x = pose.getX();
+        var y = pose.getY();
+        switch (pose.getOrient()){
             case WEST:
-                getCurrentPose().setX(x - 1);
+                pose.setX(x - 1);
                 break;
             case EAST:
-                getCurrentPose().setX(x + 1);
+                pose.setX(x + 1);
                 break;
             case NORTH:
-                getCurrentPose().setY(y - 1);
+                pose.setY(y - 1);
                 break;
             case SOUTH:
-                getCurrentPose().setY(y + 1);
+                pose.setY(y + 1);
         }
-        validateNavigation();
-
     }
 
-    private void validateNavigation() throws UnSupportedMoveOperationException {
-        if (getCurrentPose().getX() >= width || getCurrentPose().getY() >= depth)
-            throw new UnSupportedMoveOperationException("Error, Ilegal Move");
-    }
 
     //Cool refactor isn't it :D
-    private void navigateRobot(char north, char south, char east, char west) {
-        switch (getCurrentPose().getOrient()){
+    private static void navigateRobot(Pose pose, char westMove, char eastMove, char northMove, char southMove) {
+        switch (pose.getOrient()){
             case WEST:
-                getCurrentPose().setOrient(north);
+                pose.setOrient(westMove);
                 break;
             case EAST:
-                getCurrentPose().setOrient(south);
+                pose.setOrient(eastMove);
                 break;
             case NORTH:
-                getCurrentPose().setOrient(east);
+                pose.setOrient(northMove);
                 break;
             case SOUTH:
-                getCurrentPose().setOrient(west);
+                pose.setOrient(southMove);
         }
-    }
-
-    public Pose getCurrentPose() {
-        return currentPose;
-    }
-
-    public void setCurrentPose(Pose currentPose) {
-        this.currentPose = currentPose;
     }
 }
