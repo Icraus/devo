@@ -1,2 +1,2 @@
 rootProject.name = 'uiclient'
-
+include('devolib')

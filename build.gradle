@@ -19,12 +19,15 @@ repositories {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-    compile 'com.icraus:devo_robot:1.0-SNAPSHOT'
+    implementation project('devolib')
+
 }
 
 test {
     useJUnitPlatform()
 }
-
+task release{
+    dependsOn clean, installDist
+}
 
 

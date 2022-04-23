@@ -1,0 +1,3 @@
+[submodule "devolib"]
+	path = devolib
+	url = https://github.com/Icraus/devo.git
