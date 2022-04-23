@@ -1,6 +1,8 @@
 package com.icraus.devo;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.ScrollPane;
@@ -18,7 +20,7 @@ public class RobotView extends BorderPane {
     private final IntegerProperty boardDepth = new SimpleIntegerProperty(5);
     private final IntegerProperty boardWidth = new SimpleIntegerProperty(5);
     private final IntegerProperty rotation = new SimpleIntegerProperty(0);
-
+    private final BooleanProperty robotChanged = new SimpleBooleanProperty();
     final Canvas mainCanvas = new Canvas(500,500);
     final Canvas drawingCanvas = new Canvas(500,500);
 
@@ -30,17 +32,30 @@ public class RobotView extends BorderPane {
         heightProperty().addListener(e->{
             updateCanvasSize();
         });
-        currentXIndex.addListener(e -> {
-            rotation.set(0);
-        });
-        currentYIndex.addListener(e -> {
-            rotation.set(0);
-        });
         boardWidthProperty().addListener(e -> {
             canvasChanged(true);
+            setRobotChanged(true);
         });
         boardDepthProperty().addListener(e -> {
             canvasChanged(true);
+        });
+        currentXIndexProperty().addListener(e->{
+            setRobotChanged(false);
+            setRobotChanged(true);
+        });
+        currentYIndexProperty().addListener(e->{
+            setRobotChanged(false);
+            setRobotChanged(true);
+        });
+        rotationProperty().addListener(e->{
+            setRobotChanged(false);
+            setRobotChanged(true);
+        });
+
+        robotChangedProperty().addListener(e ->{
+            if(isRobotChanged()){
+                drawRobot(currentXIndex.get(), currentYIndex.get(), rotation.get());
+            }
         });
     }
     private void setCanvasSize(Canvas canvas, double width, double depth){
@@ -73,6 +88,22 @@ public class RobotView extends BorderPane {
         return boardDepth.get();
     }
 
+    public int getCurrentXIndex() {
+        return currentXIndex.get();
+    }
+
+    public IntegerProperty currentXIndexProperty() {
+        return currentXIndex;
+    }
+
+    public int getCurrentYIndex() {
+        return currentYIndex.get();
+    }
+
+    public IntegerProperty currentYIndexProperty() {
+        return currentYIndex;
+    }
+
     public IntegerProperty boardDepthProperty() {
         return boardDepth;
     }
@@ -81,8 +112,28 @@ public class RobotView extends BorderPane {
         return boardWidth.get();
     }
 
+    public boolean isRobotChanged() {
+        return robotChanged.get();
+    }
+
+    public BooleanProperty robotChangedProperty() {
+        return robotChanged;
+    }
+
+    public void setRobotChanged(boolean robotChanged) {
+        this.robotChanged.set(robotChanged);
+    }
+
     public IntegerProperty boardWidthProperty() {
         return boardWidth;
+    }
+
+    public int getRotation() {
+        return rotation.get();
+    }
+
+    public IntegerProperty rotationProperty() {
+        return rotation;
     }
 
     void updateCanvasSize(){
@@ -128,8 +179,9 @@ public class RobotView extends BorderPane {
         drawingCanvas.setOnMouseClicked(e->{
             currentXIndex.set(getContainingIndex((int) e.getX()));
             currentYIndex.set(getContainingIndex((int) e.getY()));
-            drawRobot(currentXIndex.get(), currentYIndex.get(), rotation.get());
+            setRobotChanged(true);
             rotation.set((rotation.get() + 1)  % 4);
+            setRobotChanged(false);
         });
 
         ScrollPane scrollPane = new ScrollPane();

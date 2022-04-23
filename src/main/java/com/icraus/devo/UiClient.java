@@ -2,6 +2,7 @@ package com.icraus.devo;
 
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Scene;
@@ -11,7 +12,11 @@ import javafx.stage.Stage;
 
 
 
-public class UiClient extends Application {
+public class UiClient extends Application{
+
+    private RobotView view;
+    private ObservablePose pose;
+    private Integer rotation = 0;
 
     public static void main(String[] args) {
         launch(args);
@@ -44,11 +49,39 @@ public class UiClient extends Application {
         root.setTop(box);
         widthField.increment(5);
         depthField.increment(5);
-        RobotView view = new RobotView((int)widthField.getValue(), (int)depthField.getValue());
-        createMapButton.setOnAction(e -> {
-            view.boardDepthProperty().set((Integer) depthField.getValue());
-            view.boardWidthProperty().set((Integer) widthField.getValue());
+        view = new RobotView((int)widthField.getValue(), (int)depthField.getValue());
+        pose = new ObservablePose();
+        pose.setHook(() -> {
+//            Platform.runLater(()->{
+//                try {
+//                    Thread.sleep(100);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            });
         });
+
+        view.currentXIndexProperty().bindBidirectional(pose.xProperty());
+        view.currentYIndexProperty().bindBidirectional(pose.yProperty());
+        view.rotationProperty().bindBidirectional(pose.rotationProperty());
+        pose.setX(1);
+        pose.setY(2);
+        pose.setOrient(RobotController.NORTH);
+
+        createMapButton.setOnAction(e -> {
+            view.setBoardDepth((Integer) depthField.getValue());
+            view.setBoardWidth((Integer) widthField.getValue());
+        });
+        IRobotController controller = new RobotController(5, 5);
+        Button b2 = new Button("Move");
+        b2.setOnAction(e -> {
+            try {
+                controller.executeRoute(pose, routeField.getText());
+            } catch (UnSupportedMoveOperationException unSupportedMoveOperationException) {
+                unSupportedMoveOperationException.printStackTrace();
+            }
+        });
+        box.getChildren().add(b2);
         root.setCenter(view);
         return root;
     }
