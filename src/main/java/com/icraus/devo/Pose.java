@@ -8,9 +8,9 @@ public class Pose {
     private int x;
 
     public Pose(int startX, int startY, char startOrient) {
-        this.x = startX;
-        this.y = startY;
-        this.orient = startOrient;
+        setX(startX);
+        setY(startY);
+        setOrient(startOrient);
     }
 
 
@@ -54,9 +54,9 @@ public class Pose {
     @Override
     public String toString() {
         return "Pose{" +
-                "x=" + x +
-                ", y=" + y +
-                ", orient='" + orient +
+                "x=" + getX() +
+                ", y=" + getY() +
+                ", orient='" + getOrient() +
                 "'}";
     }
 }
