@@ -1,5 +1,6 @@
 package com.icraus.devo;
 
+import javafx.animation.PathTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -11,7 +12,12 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.CubicCurveTo;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
 import javafx.scene.transform.Rotate;
+import javafx.util.Duration;
 
 public class RobotView extends BorderPane {
     private static final int BOX_SCALE = 100;
@@ -22,9 +28,15 @@ public class RobotView extends BorderPane {
     private final IntegerProperty rotation = new SimpleIntegerProperty(0);
     private final BooleanProperty robotChanged = new SimpleBooleanProperty();
     final Canvas mainCanvas = new Canvas(500,500);
-    final Canvas drawingCanvas = new Canvas(500,500);
-
+    final Canvas drawingCanvas = new Canvas(100,100);
+    private PathTransition pathTransition = new PathTransition();
+    Path path = new Path();
     Image image = new Image("/robot.png");
+    private ScrollPane scrollPane = new ScrollPane();
+    private Pane pane = new Pane();
+    private int prevX;
+    private int prevY;
+
     private RobotView(){
         widthProperty().addListener(e ->{
             updateCanvasSize();
@@ -138,7 +150,6 @@ public class RobotView extends BorderPane {
 
     void updateCanvasSize(){
         setCanvasSize(mainCanvas, getWidth(), getHeight());
-        setCanvasSize(drawingCanvas, getWidth(), getHeight());
     }
     public RobotView(int boardWidth, int boardDepth) {
         this();
@@ -151,10 +162,10 @@ public class RobotView extends BorderPane {
     public void canvasChanged(boolean value){
 
         if(value) {
-            var gc = mainCanvas.getGraphicsContext2D();
             var gc2 = drawingCanvas.getGraphicsContext2D();
             gc2.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
-            gc.clearRect(0, 0, mainCanvas.getWidth(), mainCanvas.getHeight());
+            var gc = mainCanvas.getGraphicsContext2D();
+            gc.clearRect(20, 0, mainCanvas.getWidth(), mainCanvas.getHeight());
 
             int scale = BOX_SCALE;
             int width = boardWidth.get();
@@ -176,31 +187,77 @@ public class RobotView extends BorderPane {
     }
 
     private Pane createUI() {
-        drawingCanvas.setOnMouseClicked(e->{
-            currentXIndex.set(getContainingIndex((int) e.getX()));
-            currentYIndex.set(getContainingIndex((int) e.getY()));
-            setRobotChanged(true);
-            rotation.set((rotation.get() + 1)  % 4);
-            setRobotChanged(false);
+        mainCanvas.setOnMouseClicked(e->{
+            pane.getChildren().clear();
+            drawingCanvas.relocate(getContainingIndex((int) e.getX()) * BOX_SCALE, getContainingIndex((int) e.getY()) * BOX_SCALE);
+            redrawLayouts();
+            setCurrentXIndex(getContainingIndex((int) e.getX()) * BOX_SCALE);
+            setCurrentYIndex(getContainingIndex((int) e.getY()) * BOX_SCALE);
         });
+        drawingCanvas.setOnMouseClicked(e->{
+            rotation.set((rotation.get() + 1)  % 4);
 
-        ScrollPane scrollPane = new ScrollPane();
-        Pane pane = new Pane();
-        pane.getChildren().add(mainCanvas);
-        pane.getChildren().add(drawingCanvas);
-        scrollPane.setContent(pane);
+        });
+        redrawLayouts();
+        var gc2 = drawingCanvas.getGraphicsContext2D();
+        gc2.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
+        gc2.drawImage(image, 15.0, 15.0, 70, 70);
+
         scrollPane.setFitToWidth(true);
+        scrollPane.setContent(pane);
         this.setCenter(scrollPane);
         return this;
     }
 
+    private void redrawLayouts() {
+        pane.getChildren().add(mainCanvas);
+        pane.getChildren().add(drawingCanvas);
+
+    }
+
     private void drawRobot(int x, int y, int rotation) {
+        pane.getChildren().clear();
+        drawImage(x, y, rotation);
+        LineTo lineTo = new LineTo(x * BOX_SCALE + 50, y * BOX_SCALE + 50);
+        path.getElements().add(lineTo);
+        redrawLayouts();
+        prevX = x;
+        prevY = y;
+
+    }
+
+    private void drawImage(int x, int y, int rotation) {
         var gc2 = drawingCanvas.getGraphicsContext2D();
+        var gc1 = mainCanvas.getGraphicsContext2D();
         gc2.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
-        gc2.save();
-        Rotate r = new Rotate(rotation * 90, x * BOX_SCALE + 50, y * BOX_SCALE + 50);
-        gc2.setTransform(r.getMxx(), r.getMyx(), r.getMxy(), r.getMyy(), r.getTx(), r.getTy());
-        gc2.drawImage(image, x * BOX_SCALE + 15.0, y * BOX_SCALE + 15.0, 70, 70);
-        gc2.restore();
+        gc2.drawImage(image, 15.0, 15.0, 70, 70);
+        gc1.setStroke(Color.rgb(0, 0, 0));
+        LineTo lineTo = new LineTo(prevX * BOX_SCALE + 50, prevY * BOX_SCALE + 50);
+        path.getElements().add(lineTo);
+        gc1.lineTo(prevX * BOX_SCALE + 50, prevY * BOX_SCALE + 50);
+        drawingCanvas.setRotate(rotation * 90);
+    }
+
+    public void startDrawing() {
+        var gc1 = mainCanvas.getGraphicsContext2D();
+        gc1.clearRect(0, 0, mainCanvas.getWidth(), mainCanvas.getHeight());
+        path = new Path();
+        pathTransition = new PathTransition();
+        pathTransition.setNode(drawingCanvas);
+        pathTransition.setPath(path);
+        pathTransition.setOrientation(PathTransition.OrientationType.ORTHOGONAL_TO_TANGENT);
+        pathTransition.setDuration(Duration.millis(10000));
+        MoveTo moveTo = new MoveTo(getCurrentXIndex(), getCurrentYIndex());
+        path.getElements().add(moveTo);
+        canvasChanged(true);
+        gc1.beginPath();
+    }
+    public void endDrawing(){
+        var gc1 = mainCanvas.getGraphicsContext2D();
+        gc1.lineTo(getCurrentXIndex() * BOX_SCALE + 50, getCurrentYIndex() * BOX_SCALE + 50);
+        gc1.stroke();
+        LineTo lineTo = new LineTo(getCurrentXIndex() * BOX_SCALE, getCurrentYIndex() * BOX_SCALE);
+        path.getElements().add(lineTo);
+        pathTransition.play();
     }
 }

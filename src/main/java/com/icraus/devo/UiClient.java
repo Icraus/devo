@@ -76,8 +76,13 @@ public class UiClient extends Application{
         Button b2 = new Button("Move");
         b2.setOnAction(e -> {
             try {
+                view.startDrawing();
                 controller.executeRoute(pose, routeField.getText());
+                view.endDrawing();
             } catch (UnSupportedMoveOperationException unSupportedMoveOperationException) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText(unSupportedMoveOperationException.getMessage());
+                alert.showAndWait();
                 unSupportedMoveOperationException.printStackTrace();
             }
         });
