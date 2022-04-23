@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.8'
+}
+mainClassName = "com.icraus.devo.UiClient"
+group 'com.icraus.devo'
+version '1.0-SNAPSHOT'
+javafx {
+    version = "14"
+    modules = [ 'javafx.controls', 'javafx.fxml']
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    compile 'com.icraus:devo_robot:1.0-SNAPSHOT'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
+
