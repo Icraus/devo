@@ -1,6 +1,7 @@
 package com.icraus.devo;
 
 import javafx.animation.PathTransition;
+import javafx.animation.TranslateTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -29,13 +30,12 @@ public class RobotView extends BorderPane {
     private final BooleanProperty robotChanged = new SimpleBooleanProperty();
     final Canvas mainCanvas = new Canvas(500,500);
     final Canvas drawingCanvas = new Canvas(100,100);
-    private PathTransition pathTransition = new PathTransition();
-    Path path = new Path();
     Image image = new Image("/robot.png");
     private ScrollPane scrollPane = new ScrollPane();
     private Pane pane = new Pane();
     private int prevX;
     private int prevY;
+    private Path path;
 
     private RobotView(){
         widthProperty().addListener(e ->{
@@ -188,11 +188,9 @@ public class RobotView extends BorderPane {
 
     private Pane createUI() {
         mainCanvas.setOnMouseClicked(e->{
-            pane.getChildren().clear();
-            drawingCanvas.relocate(getContainingIndex((int) e.getX()) * BOX_SCALE, getContainingIndex((int) e.getY()) * BOX_SCALE);
-            redrawLayouts();
-            setCurrentXIndex(getContainingIndex((int) e.getX()) * BOX_SCALE);
-            setCurrentYIndex(getContainingIndex((int) e.getY()) * BOX_SCALE);
+            setCurrentXIndex(getContainingIndex((int) e.getX()));
+            setCurrentYIndex(getContainingIndex((int) e.getY()));
+
         });
         drawingCanvas.setOnMouseClicked(e->{
             rotation.set((rotation.get() + 1)  % 4);
@@ -216,13 +214,13 @@ public class RobotView extends BorderPane {
     }
 
     private void drawRobot(int x, int y, int rotation) {
-        pane.getChildren().clear();
+        TranslateTransition tt = new TranslateTransition(Duration.millis(1000), drawingCanvas);
         drawImage(x, y, rotation);
-        LineTo lineTo = new LineTo(x * BOX_SCALE + 50, y * BOX_SCALE + 50);
-        path.getElements().add(lineTo);
-        redrawLayouts();
-        prevX = x;
-        prevY = y;
+        tt.setFromX(drawingCanvas.getLayoutX());
+        tt.setFromY(drawingCanvas.getLayoutY());
+        tt.setToX(x * BOX_SCALE);
+        tt.setToY(y * BOX_SCALE);
+        tt.play();
 
     }
 
@@ -232,23 +230,15 @@ public class RobotView extends BorderPane {
         gc2.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
         gc2.drawImage(image, 15.0, 15.0, 70, 70);
         gc1.setStroke(Color.rgb(0, 0, 0));
-        LineTo lineTo = new LineTo(prevX * BOX_SCALE + 50, prevY * BOX_SCALE + 50);
-        path.getElements().add(lineTo);
-        gc1.lineTo(prevX * BOX_SCALE + 50, prevY * BOX_SCALE + 50);
+        gc1.lineTo(x * BOX_SCALE + 50, y * BOX_SCALE + 50);
         drawingCanvas.setRotate(rotation * 90);
     }
 
     public void startDrawing() {
+        path = new Path();
+
         var gc1 = mainCanvas.getGraphicsContext2D();
         gc1.clearRect(0, 0, mainCanvas.getWidth(), mainCanvas.getHeight());
-        path = new Path();
-        pathTransition = new PathTransition();
-        pathTransition.setNode(drawingCanvas);
-        pathTransition.setPath(path);
-        pathTransition.setOrientation(PathTransition.OrientationType.ORTHOGONAL_TO_TANGENT);
-        pathTransition.setDuration(Duration.millis(10000));
-        MoveTo moveTo = new MoveTo(getCurrentXIndex(), getCurrentYIndex());
-        path.getElements().add(moveTo);
         canvasChanged(true);
         gc1.beginPath();
     }
@@ -256,8 +246,5 @@ public class RobotView extends BorderPane {
         var gc1 = mainCanvas.getGraphicsContext2D();
         gc1.lineTo(getCurrentXIndex() * BOX_SCALE + 50, getCurrentYIndex() * BOX_SCALE + 50);
         gc1.stroke();
-        LineTo lineTo = new LineTo(getCurrentXIndex() * BOX_SCALE, getCurrentYIndex() * BOX_SCALE);
-        path.getElements().add(lineTo);
-        pathTransition.play();
     }
 }
