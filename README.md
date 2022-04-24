@@ -31,6 +31,8 @@ The application consists of **Reusable Java Library**, **Frontend**:
 
 
 ```
+![image](https://user-images.githubusercontent.com/19273690/164977363-bb379a19-fdb3-4830-95f7-1ffe6bb90214.png)
+
 ## Getting started with Java Library:
 - clone the project using.
   ```
